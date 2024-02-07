@@ -1,7 +1,7 @@
 #ifndef SHADERS_H
 #define SHADERS_H
 
-const char *VertexShaderSrc = 
+const char *vertex_shader_src = 
   "#version 330 core\n"
   "layout (location = 0) in vec3 aPos;\n"
   "layout (location = 1) in vec4 aClr;\n"
@@ -12,7 +12,7 @@ const char *VertexShaderSrc =
   "}\0"
 ;
 
-const char *FragmentShaderSrc = 
+const char *fragment_shader_src = 
   "#version 330 core\n"
   "in vec4 outColor;\n"
   "out vec4 FragColor;\n"

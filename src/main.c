@@ -16,14 +16,14 @@ typedef struct {
 } Context;
 
 // Forward Declarations
-void DebugCallback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar* msg, const GLvoid* user);
-void CreateBuffers(uint32_t *vao, uint32_t *vbo);
-void DeleteBuffers(uint32_t *vao, uint32_t *vbo);
-void BindBuffers(uint32_t *vao, uint32_t *vbo);
-void UnbindBuffers();
-void VertexAttributes();
-void CreateShader(uint32_t *shader);
-void CheckShader(uint32_t shader, GLboolean link);
+void debug_callback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar* msg, const GLvoid* user);
+void create_buffers(uint32_t *vao, uint32_t *vbo);
+void delete_buffers(uint32_t *vao, uint32_t *vbo);
+void bind_buffers(uint32_t *vao, uint32_t *vbo);
+void unbind_buffers();
+void vertex_attributes();
+void create_shader(uint32_t *shader);
+void check_shader(uint32_t shader, GLboolean link);
 
 #define DATA_FIELDS 7
 
@@ -60,50 +60,50 @@ int main(int argc, char **argv) {
 
 #ifdef ENABLE_GL_DEBUG
   glEnable(GL_DEBUG_OUTPUT);
-  glDebugMessageCallback(DebugCallback, (void*)0);
+  glDebugMessageCallback(debug_callback, (void*)0);
 #endif
 
-  CreateShader(&ctx.shader);
+  create_shader(&ctx.shader);
 
-  CreateBuffers(&ctx.vao, &ctx.vbo);
+  create_buffers(&ctx.vao, &ctx.vbo);
   glBufferData(GL_ARRAY_BUFFER, (sizeof(float) * DATA_FIELDS * 3), triangle_data, GL_STATIC_DRAW);
 
-  VertexAttributes();
-  UnbindBuffers();
+  vertex_attributes();
+  unbind_buffers();
 
 
   while (!glfwWindowShouldClose(ctx.window)) {
     glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT);
 
-    BindBuffers(&ctx.vao, &ctx.vbo);
+    bind_buffers(&ctx.vao, &ctx.vbo);
 
     glUseProgram(ctx.shader);
     
     glDrawArrays(GL_TRIANGLES, 0, 3);
 
-    UnbindBuffers();
+    unbind_buffers();
 
     glfwSwapBuffers(ctx.window);
     glfwPollEvents();
   }
 
   glDeleteProgram(ctx.shader);
-  DeleteBuffers(&ctx.vao, &ctx.vbo);
+  delete_buffers(&ctx.vao, &ctx.vbo);
 
   glfwDestroyWindow(ctx.window);
   glfwTerminate();
   return 0;
 }
 
-void DebugCallback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar* msg, const GLvoid* user) {
+void debug_callback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar* msg, const GLvoid* user) {
   fprintf(stderr, 
     "GL CALLBACK: %s type = 0x%x, severity = 0x%x, message = %s\n",
     (type == GL_DEBUG_TYPE_ERROR ? "** GL ERROR **" : ""), type, severity, msg
   );
 }
 
-inline void CreateBuffers(uint32_t *vao, uint32_t *vbo) {
+inline void create_buffers(uint32_t *vao, uint32_t *vbo) {
   glGenVertexArrays(1, vao);
   glBindVertexArray(*vao);
 
@@ -111,22 +111,22 @@ inline void CreateBuffers(uint32_t *vao, uint32_t *vbo) {
   glBindBuffer(GL_ARRAY_BUFFER, *vbo);
 }
 
-inline void DeleteBuffers(uint32_t *vao, uint32_t *vbo) {
+inline void delete_buffers(uint32_t *vao, uint32_t *vbo) {
   glDeleteVertexArrays(1, vao);
   glDeleteBuffers(1, vbo);
 }
 
-inline void BindBuffers(uint32_t *vao, uint32_t *vbo) {
+inline void bind_buffers(uint32_t *vao, uint32_t *vbo) {
   glBindVertexArray(*vao);
   glBindBuffer(GL_ARRAY_BUFFER, *vbo);
 }
 
-inline void UnbindBuffers() {
+inline void unbind_buffers() {
   glBindBuffer(GL_ARRAY_BUFFER, 0);
   glBindVertexArray(0);
 }
 
-inline void VertexAttributes() {
+inline void vertex_attributes() {
   glVertexAttribPointer(0, 3, GL_FLOAT, GL_TRUE, DATA_FIELDS * sizeof(float), (void*)0);
   glEnableVertexAttribArray(0);
 
@@ -134,7 +134,7 @@ inline void VertexAttributes() {
   glEnableVertexAttribArray(1);
 }
 
-inline void CheckShader(uint32_t shader, GLboolean link) {
+inline void check_shader(uint32_t shader, GLboolean link) {
   int32_t success = 0;
   char *message = 0;
   char error[512] = {0};
@@ -152,22 +152,22 @@ inline void CheckShader(uint32_t shader, GLboolean link) {
   if (!success) fprintf(stderr, "%s =>\n\t%s\n", message, error);
 }
 
-inline void CreateShader(uint32_t *shader) {
+inline void create_shader(uint32_t *shader) {
   uint32_t vert = glCreateShader(GL_VERTEX_SHADER);
-  glShaderSource(vert, 1, &VertexShaderSrc, NULL);
+  glShaderSource(vert, 1, &vertex_shader_src, NULL);
   glCompileShader(vert);
-  CheckShader(vert, 0);
+  check_shader(vert, 0);
 
   uint32_t frag = glCreateShader(GL_FRAGMENT_SHADER);
-  glShaderSource(frag, 1, &FragmentShaderSrc, NULL);
+  glShaderSource(frag, 1, &fragment_shader_src, NULL);
   glCompileShader(frag);
-  CheckShader(frag, 0);
+  check_shader(frag, 0);
 
   *shader = glCreateProgram();
   glAttachShader(*shader, vert);
   glAttachShader(*shader, frag);
   glLinkProgram(*shader);
-  CheckShader(*shader, 1);
+  check_shader(*shader, 1);
 
   glDeleteShader(vert);
   glDeleteShader(frag);
