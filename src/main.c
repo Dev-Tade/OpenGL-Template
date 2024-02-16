@@ -2,40 +2,81 @@
 #include <GLFW/glfw3.h>
 
 #include <stdio.h>
+#include <stdlib.h>
 
 #include <shaders.h>
 
 #define WIDTH 700
 #define HEIGHT 600
 
+#define MAX_TRIANGLES 2048
+#define MAX_VERTICES MAX_TRIANGLES * 3
+
 typedef struct {
-  GLFWwindow *window;
+  float x;
+  float y;
+} Vec2d;
+
+typedef struct {
+  float x;
+  float y;
+  float z;
+  float w;
+} Vec4d;
+
+typedef struct {
+  Vec2d position;
+  Vec4d color;
+} Vertex;
+
+typedef struct {
+  Vertex triangle_data[MAX_VERTICES];
+  
   uint32_t vao;
   uint32_t vbo;
   uint32_t shader;
+  
+  uint32_t triangle_count;
+} Renderer;
+
+typedef struct {
+  GLFWwindow *window;
+  Renderer *renderer;
 } Context;
 
 // Forward Declarations
 void debug_callback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar* msg, const GLvoid* user);
-void create_buffers(uint32_t *vao, uint32_t *vbo);
-void delete_buffers(uint32_t *vao, uint32_t *vbo);
-void bind_buffers(uint32_t *vao, uint32_t *vbo);
-void unbind_buffers();
-void vertex_attributes();
 void create_shader(uint32_t *shader);
 void check_shader(uint32_t shader, GLboolean link);
 
-#define DATA_FIELDS 7
+Renderer *renderer_allocate();
+void renderer_deallocate(Renderer *renderer);
 
-// X, Y, Z, R, G, B, A
-const float triangle_data[DATA_FIELDS * 3] = { 
-  -0.5f, -0.5f, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f,
-  0.5f, -0.5f, 0.0f, 0.0f, 0.0f, 1.0f, 1.0f,
-  0.0f, 0.5f, 0.0f, 0.0f, 1.0f, 0.0f, 1.0f,
+void renderer_bind_buffers(Renderer *r);
+void renderer_unbind_buffers(Renderer *r);
+
+void renderer_setup(Renderer *r);
+void renderer_cleanup(Renderer *r);
+
+void renderer_begin_frame(Renderer *r);
+void renderer_end_frame(Renderer *r);
+
+void renderer_push_triangle(Renderer *r, Vec2d coords[3], Vec4d colors[3]);
+
+Vec2d triangle_positions[3] = {
+  {-0.5f, -0.5f},
+  {0.5f, -0.5f},
+  {0.0f, 0.5f}
+};
+
+Vec4d triangle_colors[3] = {
+  {1.0f, 0.0f, 0.0f, 1.0f},
+  {0.0f, 0.0f, 1.0f, 1.0f},
+  {0.0f, 1.0f, 0.0f, 1.0f},
 };
 
 int main(int argc, char **argv) {
-  Context ctx = {NULL, 0, 0, 0};
+  Context ctx = {NULL, NULL};
 
   if (!glfwInit()) {
     fprintf(stderr, "GLFW::INIT\n");
@@ -45,7 +86,7 @@ int main(int argc, char **argv) {
   glfwWindowHint(GLFW_VERSION_MAJOR, 3);
   glfwWindowHint(GLFW_VERSION_MINOR, 3);
 
-  ctx.window = glfwCreateWindow(WIDTH, HEIGHT, "OpenGL Template", NULL, NULL);
+  ctx.window = glfwCreateWindow(WIDTH, HEIGHT, "Renderer 2D", NULL, NULL);
   if (!ctx.window) {
     fprintf(stderr, "GLFW::CREATE_WINDOW\n");
     glfwTerminate();
@@ -58,38 +99,37 @@ int main(int argc, char **argv) {
     return -1;
   }
 
+  ctx.renderer = renderer_allocate();
+  if (!ctx.window) {
+    fprintf(stderr, "RENDERER::ALLOCATE\n");
+    glfwTerminate();
+    return -1;
+  }
+
 #ifdef ENABLE_GL_DEBUG
   glEnable(GL_DEBUG_OUTPUT);
   glDebugMessageCallback(debug_callback, (void*)0);
 #endif
 
-  create_shader(&ctx.shader);
-
-  create_buffers(&ctx.vao, &ctx.vbo);
-  glBufferData(GL_ARRAY_BUFFER, (sizeof(float) * DATA_FIELDS * 3), triangle_data, GL_STATIC_DRAW);
-
-  vertex_attributes();
-  unbind_buffers();
-
+  renderer_setup(ctx.renderer);
 
   while (!glfwWindowShouldClose(ctx.window)) {
     glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-    glClear(GL_COLOR_BUFFER_BIT);
-
-    bind_buffers(&ctx.vao, &ctx.vbo);
-
-    glUseProgram(ctx.shader);
+  
+    renderer_begin_frame(ctx.renderer);
+      renderer_push_triangle(
+        ctx.renderer,
+        triangle_positions,
+        triangle_colors
+      );
+    renderer_end_frame(ctx.renderer);
     
-    glDrawArrays(GL_TRIANGLES, 0, 3);
-
-    unbind_buffers();
-
     glfwSwapBuffers(ctx.window);
     glfwPollEvents();
   }
 
-  glDeleteProgram(ctx.shader);
-  delete_buffers(&ctx.vao, &ctx.vbo);
+  renderer_cleanup(ctx.renderer);
+  renderer_deallocate(ctx.renderer);
 
   glfwDestroyWindow(ctx.window);
   glfwTerminate();
@@ -103,38 +143,7 @@ void debug_callback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsi
   );
 }
 
-inline void create_buffers(uint32_t *vao, uint32_t *vbo) {
-  glGenVertexArrays(1, vao);
-  glBindVertexArray(*vao);
-
-  glGenBuffers(1, vbo);
-  glBindBuffer(GL_ARRAY_BUFFER, *vbo);
-}
-
-inline void delete_buffers(uint32_t *vao, uint32_t *vbo) {
-  glDeleteVertexArrays(1, vao);
-  glDeleteBuffers(1, vbo);
-}
-
-inline void bind_buffers(uint32_t *vao, uint32_t *vbo) {
-  glBindVertexArray(*vao);
-  glBindBuffer(GL_ARRAY_BUFFER, *vbo);
-}
-
-inline void unbind_buffers() {
-  glBindBuffer(GL_ARRAY_BUFFER, 0);
-  glBindVertexArray(0);
-}
-
-inline void vertex_attributes() {
-  glVertexAttribPointer(0, 3, GL_FLOAT, GL_TRUE, DATA_FIELDS * sizeof(float), (void*)0);
-  glEnableVertexAttribArray(0);
-
-  glVertexAttribPointer(1, 4, GL_FLOAT, GL_TRUE, DATA_FIELDS * sizeof(float), (void*)(3*sizeof(float)));
-  glEnableVertexAttribArray(1);
-}
-
-inline void check_shader(uint32_t shader, GLboolean link) {
+void check_shader(uint32_t shader, GLboolean link) {
   int32_t success = 0;
   char *message = 0;
   char error[512] = {0};
@@ -152,7 +161,7 @@ inline void check_shader(uint32_t shader, GLboolean link) {
   if (!success) fprintf(stderr, "%s =>\n\t%s\n", message, error);
 }
 
-inline void create_shader(uint32_t *shader) {
+void create_shader(uint32_t *shader) {
   uint32_t vert = glCreateShader(GL_VERTEX_SHADER);
   glShaderSource(vert, 1, &vertex_shader_src, NULL);
   glCompileShader(vert);
@@ -171,4 +180,82 @@ inline void create_shader(uint32_t *shader) {
 
   glDeleteShader(vert);
   glDeleteShader(frag);
+}
+
+Renderer *renderer_allocate()
+{
+  return (Renderer *)malloc(sizeof(Renderer));
+}
+
+void renderer_deallocate(Renderer *renderer)
+{
+  free(renderer);
+}
+
+void renderer_begin_frame(Renderer *r)
+{
+  glClear(GL_COLOR_BUFFER_BIT);
+  r->triangle_count = 0;
+}
+
+void renderer_end_frame(Renderer *r)
+{
+  glUseProgram(r->shader);
+  renderer_bind_buffers(r);
+  glBufferSubData(GL_ARRAY_BUFFER, 0, r->triangle_count * 3 * sizeof(Vertex), r->triangle_data);
+
+  glDrawArrays(GL_TRIANGLES, 0, r->triangle_count * 3);
+}
+
+void renderer_bind_buffers(Renderer *r)
+{
+  glBindVertexArray(r->vao);
+  glBindBuffer(GL_ARRAY_BUFFER, r->vbo);
+}
+
+void renderer_unbind_buffers(Renderer *r)
+{
+  glBindVertexArray(0);
+  glBindBuffer(GL_ARRAY_BUFFER, 0);
+}
+
+void renderer_setup(Renderer *r)
+{
+  glGenVertexArrays(1, &r->vao);
+  glGenBuffers(1, &r->vbo);
+
+  renderer_bind_buffers(r);
+  glBufferData(GL_ARRAY_BUFFER, MAX_VERTICES, NULL, GL_DYNAMIC_DRAW);   
+
+  glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, position));
+  glEnableVertexAttribArray(0);
+
+  glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, color));
+  glEnableVertexAttribArray(1);
+
+  create_shader(&r->shader);
+
+  renderer_unbind_buffers(r);  
+}
+
+void renderer_cleanup(Renderer *r)
+{
+  glDeleteProgram(r->shader);
+  glDeleteVertexArrays(1, &r->vao);
+  glDeleteBuffers(1, &r->vbo);
+}
+
+void renderer_push_triangle(Renderer *r, Vec2d coords[3], Vec4d colors[3])
+{
+  if (r->triangle_count == MAX_TRIANGLES) {
+    renderer_end_frame(r);
+    renderer_begin_frame(r);
+  }
+
+  for (uint8_t i = 0; i < 3; ++i) {
+    r->triangle_data[r->triangle_count * 3 + i].position = coords[i];
+    r->triangle_data[r->triangle_count * 3 + i].color = colors[i];
+  }
+
+  r->triangle_count += 1;
 }
