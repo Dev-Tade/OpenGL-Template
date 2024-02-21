@@ -5,7 +5,7 @@
 
 #include <shaders.h>
 
-#define WIDTH 700
+#define WIDTH 800
 #define HEIGHT 600
 
 typedef struct {
@@ -16,6 +16,9 @@ typedef struct {
 } Context;
 
 // Forward Declarations
+
+void framebuffer_size_callback(GLFWwindow *window, int width, int height);
+
 void debug_callback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar* msg, const GLvoid* user);
 void create_buffers(uint32_t *vao, uint32_t *vbo);
 void delete_buffers(uint32_t *vao, uint32_t *vbo);
@@ -51,12 +54,16 @@ int main(int argc, char **argv) {
     glfwTerminate();
     return -1;
   }
+
   glfwMakeContextCurrent(ctx.window);
 
   if (!gladLoadGLLoader((GLADloadproc) glfwGetProcAddress)){
     fprintf(stderr, "GLAD::LOAD\n");
     return -1;
   }
+
+  glViewport(0, 0, WIDTH, HEIGHT);
+  glfwSetWindowSizeCallback(ctx.window, framebuffer_size_callback);
 
 #ifdef ENABLE_GL_DEBUG
   glEnable(GL_DEBUG_OUTPUT);
@@ -171,4 +178,8 @@ inline void create_shader(uint32_t *shader) {
 
   glDeleteShader(vert);
   glDeleteShader(frag);
+}
+
+void framebuffer_size_callback(GLFWwindow *window, int width, int height) {
+  glViewport(0, 0, width, height);
 }
