@@ -6,7 +6,7 @@
 
 #include <shaders.h>
 
-#define WIDTH 700
+#define WIDTH 800
 #define HEIGHT 600
 
 #define MAX_TRIANGLES 2048
@@ -48,6 +48,8 @@ typedef struct {
 void debug_callback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar* msg, const GLvoid* user);
 void create_shader(uint32_t *shader);
 void check_shader(uint32_t shader, GLboolean link);
+
+void framebuffer_size_callback(GLFWwindow *window, int width, int height);
 
 Renderer *renderer_allocate();
 void renderer_deallocate(Renderer *renderer);
@@ -106,6 +108,9 @@ int main(int argc, char **argv) {
     return -1;
   }
 
+  glViewport(0, 0, WIDTH, HEIGHT);
+  glfwSetWindowSizeCallback(ctx.window, framebuffer_size_callback);
+
 #ifdef ENABLE_GL_DEBUG
   glEnable(GL_DEBUG_OUTPUT);
   glDebugMessageCallback(debug_callback, (void*)0);
@@ -134,6 +139,11 @@ int main(int argc, char **argv) {
   glfwDestroyWindow(ctx.window);
   glfwTerminate();
   return 0;
+}
+
+void framebuffer_size_callback(GLFWwindow *window, int width, int height)
+{
+  glViewport(0, 0, width, height);
 }
 
 void debug_callback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar* msg, const GLvoid* user) {
