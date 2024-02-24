@@ -3,6 +3,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include <shaders.h>
 
@@ -24,6 +25,8 @@ typedef struct {
   float w;
 } Vec4d;
 
+typedef float Mat4[16];
+
 typedef struct {
   Vec2d position;
   Vec4d color;
@@ -37,6 +40,7 @@ typedef struct {
   uint32_t shader;
   
   uint32_t triangle_count;
+  Mat4 projection_matrix;
 } Renderer;
 
 typedef struct {
@@ -48,6 +52,7 @@ typedef struct {
 void debug_callback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar* msg, const GLvoid* user);
 void create_shader(uint32_t *shader);
 void check_shader(uint32_t shader, GLboolean link);
+void ortho(float l, float r, float t, float b, float zn, float zf, Mat4 out);
 
 void framebuffer_size_callback(GLFWwindow *window, int width, int height);
 
@@ -66,9 +71,9 @@ void renderer_end_frame(Renderer *r);
 void renderer_push_triangle(Renderer *r, Vec2d coords[3], Vec4d colors[3]);
 
 Vec2d triangle_positions[3] = {
-  {-0.5f, -0.5f},
-  {0.5f, -0.5f},
-  {0.0f, 0.5f}
+  {0.0f, 0.0f},
+  {0.0f, 50.0f},
+  {50.0f, 0.0f}
 };
 
 Vec4d triangle_colors[3] = {
@@ -76,6 +81,8 @@ Vec4d triangle_colors[3] = {
   {0.0f, 0.0f, 1.0f, 1.0f},
   {0.0f, 1.0f, 0.0f, 1.0f},
 };
+
+// Mat4 proj_matrix = {0};
 
 int main(int argc, char **argv) {
   Context ctx = {NULL, NULL};
@@ -108,8 +115,11 @@ int main(int argc, char **argv) {
     return -1;
   }
 
-  glViewport(0, 0, WIDTH, HEIGHT);
+  glfwSetWindowUserPointer(ctx.window, &ctx);
   glfwSetWindowSizeCallback(ctx.window, framebuffer_size_callback);
+
+  glViewport(0, 0, WIDTH, HEIGHT);
+  ortho(0, WIDTH, HEIGHT, 0, -1, 1, ctx.renderer->projection_matrix);
 
 #ifdef ENABLE_GL_DEBUG
   glEnable(GL_DEBUG_OUTPUT);
@@ -143,7 +153,10 @@ int main(int argc, char **argv) {
 
 void framebuffer_size_callback(GLFWwindow *window, int width, int height)
 {
+  Context *g_ctx = (Context *)glfwGetWindowUserPointer(window);
+
   glViewport(0, 0, width, height);
+  ortho(0, width, height, 0, -1, 1, g_ctx->renderer->projection_matrix);
 }
 
 void debug_callback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar* msg, const GLvoid* user) {
@@ -194,7 +207,10 @@ void create_shader(uint32_t *shader) {
 
 Renderer *renderer_allocate()
 {
-  return (Renderer *)malloc(sizeof(Renderer));
+  Renderer *r = (Renderer *)malloc(sizeof(Renderer));
+  memset(r, 0, sizeof(Renderer));
+
+  return r;
 }
 
 void renderer_deallocate(Renderer *renderer)
@@ -211,6 +227,10 @@ void renderer_begin_frame(Renderer *r)
 void renderer_end_frame(Renderer *r)
 {
   glUseProgram(r->shader);
+
+  uint32_t proj_loc = glGetUniformLocation(r->shader, "projection_matrix");
+  glUniformMatrix4fv(proj_loc, 1, GL_FALSE, &r->projection_matrix[0]);
+
   renderer_bind_buffers(r);
   glBufferSubData(GL_ARRAY_BUFFER, 0, r->triangle_count * 3 * sizeof(Vertex), r->triangle_data);
 
@@ -245,7 +265,9 @@ void renderer_setup(Renderer *r)
 
   create_shader(&r->shader);
 
-  renderer_unbind_buffers(r);  
+  renderer_unbind_buffers(r);
+
+  r->triangle_count = 0;  
 }
 
 void renderer_cleanup(Renderer *r)
@@ -268,4 +290,33 @@ void renderer_push_triangle(Renderer *r, Vec2d coords[3], Vec4d colors[3])
   }
 
   r->triangle_count += 1;
+}
+
+void ortho(float l, float r, float b, float t, float zn, float zf, Mat4 out)
+{
+  if (l == r || t == b || zn == zf)
+  {
+    fprintf(stderr, "ORTHO::INVALID_ARGUMENTS\n");
+    exit(1);
+  }
+
+  out[0] = 2.0f / (r - l);
+  out[1] = 0.0f;
+  out[2] = 0.0f;
+  out[3] = 0.0f;
+
+  out[4] = 0.0f;
+  out[5] = 2.0f / (t - b);
+  out[6] = 0.0f;
+  out[7] = 0.0f;
+
+  out[8] = 0.0f;
+  out[9] = 0.0f;
+  out[10] = -2.0f / (zf - zn);
+  out[11] = 0.0f;
+
+  out[12] = -(r + l) / (r - l);
+  out[13] = -(t + b) / (t - b);
+  out[14] = -(zf + zn) / (zf - zn);
+  out[15] = 1.0f;
 }

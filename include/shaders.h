@@ -5,9 +5,10 @@ const char *vertex_shader_src =
   "#version 330 core\n"
   "layout (location = 0) in vec2 aPos;\n"
   "layout (location = 1) in vec4 aClr;\n"
+  "uniform mat4 projection_matrix;\n"
   "out vec4 outColor;\n"
   "void main(void) {\n"
-  "  gl_Position = vec4(aPos, 0.0f, 1.0f);\n"
+  "  gl_Position = (projection_matrix * (vec4(aPos, 0.0f, 1.0f)));\n"
   "  outColor = aClr;\n"
   "}\0"
 ;
