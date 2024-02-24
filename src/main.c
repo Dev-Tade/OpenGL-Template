@@ -69,11 +69,12 @@ void renderer_begin_frame(Renderer *r);
 void renderer_end_frame(Renderer *r);
 
 void renderer_push_triangle(Renderer *r, Vec2d coords[3], Vec4d colors[3]);
+void renderer_push_quad(Renderer *r, Vec2d coords[4], Vec4d colors[4]);
 
-Vec2d triangle_positions[3] = {
+Vec2d triangle_vertices[3] = {
   {0.0f, 0.0f},
   {0.0f, 50.0f},
-  {50.0f, 0.0f}
+  {50.0f, 0.0f},
 };
 
 Vec4d triangle_colors[3] = {
@@ -82,7 +83,25 @@ Vec4d triangle_colors[3] = {
   {0.0f, 1.0f, 0.0f, 1.0f},
 };
 
-// Mat4 proj_matrix = {0};
+/*
+  t1 = {v1, v2, v3}
+  t2 = {v4, v2, v3}
+
+  v1 = x, y | v2 = x + w, y | v3 = x, y + h | v4 = x + w, y + h
+*/
+Vec2d quad_vertices[4] = {
+  {150.0f, 150.0f},
+  {350.0f, 150.0f},
+  {150.0f, 350.0f},
+  {350.0f, 350.0f},
+};
+
+Vec4d quad_colors[4] = {
+  {1.0f, 0.0f, 0.0f, 1.0f},
+  {0.0f, 1.0f, 0.0f, 1.0f},
+  {0.0f, 0.0f, 1.0f, 1.0f},
+  {1.0f, 0.0f, 0.0f, 1.0f},
+};
 
 int main(int argc, char **argv) {
   Context ctx = {NULL, NULL};
@@ -134,8 +153,14 @@ int main(int argc, char **argv) {
     renderer_begin_frame(ctx.renderer);
       renderer_push_triangle(
         ctx.renderer,
-        triangle_positions,
+        triangle_vertices,
         triangle_colors
+      );
+
+      renderer_push_quad(
+        ctx.renderer,
+        quad_vertices,
+        quad_colors
       );
     renderer_end_frame(ctx.renderer);
     
@@ -290,6 +315,24 @@ void renderer_push_triangle(Renderer *r, Vec2d coords[3], Vec4d colors[3])
   }
 
   r->triangle_count += 1;
+}
+
+void renderer_push_quad(Renderer *r, Vec2d coords[4], Vec4d colors[4])
+{
+  // Flush it anyways
+  if (r->triangle_count == MAX_TRIANGLES) {
+    renderer_end_frame(r);
+    renderer_begin_frame(r);
+  }
+
+  Vec2d t1v[3] = {coords[0], coords[1], coords[2]};
+  Vec2d t2v[3] = {coords[3], coords[1], coords[2]};
+
+  Vec4d t1c[3] = {colors[0], colors[1], colors[2]};
+  Vec4d t2c[3] = {colors[3], colors[1], colors[2]};
+
+  renderer_push_triangle(r, t1v, t1c);
+  renderer_push_triangle(r, t2v, t2c);
 }
 
 void ortho(float l, float r, float b, float t, float zn, float zf, Mat4 out)
