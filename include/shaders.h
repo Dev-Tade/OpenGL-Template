@@ -3,21 +3,20 @@
 
 const char *vertex_shader_src = 
   "#version 330 core\n"
-  "layout (location = 0) in vec3 aPos;\n"
-  "layout (location = 1) in vec4 aClr;\n"
-  "out vec4 outColor;\n"
+  "uniform mat4 model;\n"
+  "uniform mat4 view;\n"
+  "uniform mat4 proj;\n"
+  "layout (location = 0) in vec3 Position;\n"
   "void main(void) {\n"
-  "  gl_Position = vec4(aPos, 1.0f);\n"
-  "  outColor = aClr;\n"
+  "  gl_Position = proj * view * model * vec4(Position, 1.0f);\n"
   "}\0"
 ;
 
 const char *fragment_shader_src = 
   "#version 330 core\n"
-  "in vec4 outColor;\n"
   "out vec4 FragColor;\n"
   "void main(void) {\n"
-  "FragColor = outColor;\n"
+  " FragColor = vec4(1.0f, 0.7f, 0.3f, 1.0f);\n"
   "}\0"
 ;
 

@@ -6,7 +6,7 @@ GLAD := ./thirdparty/glad.c
 
 GL_DEBUG = -DENABLE_GL_DEBUG=1
 
-CC := gcc
+CC := g++
 CFLAGS := -Wall $(THIRDPARTY) $(LOCAL) $(GL_DEBUG)
 
 SRC_DIR := ./src
