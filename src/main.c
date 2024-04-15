@@ -49,12 +49,13 @@ typedef struct {
 } Context;
 
 // Forward Declarations
+
+void framebuffer_size_callback(GLFWwindow *window, int width, int height);
+
 void debug_callback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar* msg, const GLvoid* user);
 void create_shader(uint32_t *shader);
 void check_shader(uint32_t shader, GLboolean link);
 void ortho(float l, float r, float t, float b, float zn, float zf, Mat4 out);
-
-void framebuffer_size_callback(GLFWwindow *window, int width, int height);
 
 Renderer *renderer_allocate();
 void renderer_deallocate(Renderer *renderer);
@@ -120,6 +121,7 @@ int main(int argc, char **argv) {
     glfwTerminate();
     return -1;
   }
+
   glfwMakeContextCurrent(ctx.window);
 
   if (!gladLoadGLLoader((GLADloadproc) glfwGetProcAddress)){
