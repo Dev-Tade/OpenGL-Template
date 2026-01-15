@@ -1,3 +1,13 @@
+# THIS BRANCH IS NOW ARCHIVED
+
+All branches prefixed with `archive/` are no longer mantained.
+
+Instead, all effort has been moved into `master` branch in order to reduce
+fragmentation and make the template more mantainable.
+
+These archived branches are kept for reference only. They no longer receive
+updates or new features.
+
 # OPENGL TEMPLATE
 An OpenGL 3.3 Core Profile project template using GLAD, GLFW 3.3.8 and GLM under mingw64
 
