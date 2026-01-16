@@ -5,7 +5,7 @@
 
 include ../Config.mk
 
-THIRDPARTY_OBJ = $(OUTPUT_DIR)/glad.o
+THIRDPARTY_OBJ = $(OUTPUT_DIR)/glad.o $(OUTPUT_DIR)/stb_image.o
 
 .PHONY: configure_glfw
 all: configure_glfw $(THIRDPARTY_OBJ)
@@ -16,8 +16,11 @@ ifeq ($(GLFW_MODE),dynamic)
 endif
 	@echo " * Configuring GLFW to \"$(GLFW_MODE)\""
 
-$(OUTPUT_DIR)/glad.o : $(THIRDPARTY_SRC)/glad.c
+$(OUTPUT_DIR)/glad.o: $(THIRDPARTY_SRC)/glad.c
 	$(CC) $(CFLAGS) -c $< -o $@ -I$(THIRDPARTY_INCLUDE)/
+
+$(OUTPUT_DIR)/stb_image.o: $(THIRDPARTY_INCLUDE)/stb_image.h
+	$(CC) $(CFLAGS) -x c -c $< -o $@ -DSTB_IMAGE_IMPLEMENTATION
 
 clean:
 ifeq ($(GLFW_MODE),dynamic)
