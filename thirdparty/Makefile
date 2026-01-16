@@ -5,7 +5,7 @@
 
 include ../Config.mk
 
-THIRDPARTY_OBJ = $(OUTPUT_DIR)/glad.o $(OUTPUT_DIR)/stb_image.o
+THIRDPARTY_OBJ = $(OUTPUT_DIR)/glad.o $(OUTPUT_DIR)/stb_image.o $(OUTPUT_DIR)/raymath.o
 
 .PHONY: configure_glfw
 all: configure_glfw $(THIRDPARTY_OBJ)
@@ -21,6 +21,9 @@ $(OUTPUT_DIR)/glad.o: $(THIRDPARTY_SRC)/glad.c
 
 $(OUTPUT_DIR)/stb_image.o: $(THIRDPARTY_INCLUDE)/stb_image.h
 	$(CC) $(CFLAGS) -x c -c $< -o $@ -DSTB_IMAGE_IMPLEMENTATION
+
+$(OUTPUT_DIR)/raymath.o: $(THIRDPARTY_INCLUDE)/raymath.h
+	$(CC) $(CFLAGS) -x c -c $< -o $@ -DRAYMATH_IMPLEMENTATION
 
 clean:
 ifeq ($(GLFW_MODE),dynamic)
