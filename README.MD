@@ -1,8 +1,13 @@
 # OPENGL TEMPLATE
-An OpenGL 3.3 Core Profile project template using GLAD and GLFW 3.3.8 under mingw64
+An OpenGL 3.3 Core Profile project template using GLAD, GLFW 3.3.8, stb_image and raymath (raylib math module) under mingw64
 
 [GLFW Download](https://www.glfw.org/download.html)
+
 [GLAD Download](https://glad.dav1d.de/)
+
+[stb GitHub repo](https://github.com/nothings/stb/)
+
+[raylib Homepage](https://www.raylib.com)
 
 ## Build System
 Currently using a handmade makefile that can be configured at `Config.mk`, root
