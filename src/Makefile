@@ -10,13 +10,14 @@ THIRDPARTY_OBJ = $(filter-out $(OBJ),$(wildcard $(OUTPUT_DIR)/*.o))
 BIN := $(BIN_DIR)/$(OUTPUT_EXEC)
 
 INCLUDES := -I$(THIRDPARTY_INCLUDE)/ -I$(USER_INCLUDE)/
-LIBS := 
+LIBS := -L$(THIRDPARTY_LIB)
 
 ifeq ($(GLFW_MODE),static)
-	LIBS += -lglfw3
+	LIBS += -lglfw3 -lopengl32 -lgdi32
+else ifeq ($(GLFW_MODE),dynamic)
+	LIBS += -DGLFW_DLL -lglfw3dll
 endif
 
-LIBS += -L$(THIRDPARTY_LIB) -lopengl32 -lgdi32
 
 .PHONY: all clean
 
