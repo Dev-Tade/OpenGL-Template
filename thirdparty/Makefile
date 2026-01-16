@@ -1,0 +1,26 @@
+### Thirdparty Makefile ###
+# Build thirdparty srcs
+# Precompile header only libraries
+# Copy dll when running GLFW dynamic
+
+include ../Config.mk
+
+THIRDPARTY_OBJ = $(OUTPUT_DIR)/glad.o
+
+.PHONY: configure_glfw
+all: configure_glfw $(THIRDPARTY_OBJ)
+
+configure_glfw:
+ifeq ($(GLFW_MODE),dynamic)
+	cp "$(THIRDPARTY_LIB)/glfw3.dll" "$(BIN_DIR)/glfw.dll"
+endif
+	@echo " * Configuring GLFW to \"$(GLFW_MODE)\""
+
+$(OUTPUT_DIR)/glad.o : $(THIRDPARTY_SRC)/glad.c
+	$(CC) $(CFLAGS) -c $< -o $@ -I$(THIRDPARTY_INCLUDE)/
+
+clean:
+ifeq ($(GLFW_MODE),dynamic)
+	rm -rf "$(BIN_DIR)/glfw3.dll"
+endif
+	rm -rf $(call QUOTE_FILES,$(THIRDPARTY_OBJ))

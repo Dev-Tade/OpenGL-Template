@@ -1,41 +1,37 @@
-THIRDPARTY := -I./thirdparty/include/ -L./thirdparty/lib
-LOCAL := -I./include
+### Root Makefile ###
 
-LINK := -lglfw3 -lopengl32 -lgdi32
-GLAD := ./thirdparty/glad.c
+include Config.mk
 
-GL_DEBUG = -DENABLE_GL_DEBUG=1
+# Base Build Options
 
-CC := gcc
-CFLAGS := -Wall $(THIRDPARTY) $(LOCAL) $(GL_DEBUG)
+# Always run thirdparty (internally skips already built dependencies)
+.PHONY: thirdparty
 
-SRC_DIR := ./src
-SRC_FILES := $(wildcard $(SRC_DIR)/*.cpp) $(wildcard $(SRC_DIR)/*.c)
+all: check thirdparty user
 
-BUILD_DIR := ./build
-OUTPUT := ./build/output
-
-ifeq ($(OS),Windows_NT)
-    RM = del /Q /F
-else
-    RM = rm -f
-endif
-
-ifeq ($(OS),Windows_NT)
-	RMALL := .\\build\\*
-else
-	RMALL := ./build/*
-endif
-
-all: build
-
-build: $(OUTPUT)
-
-$(OUTPUT): $(SRC_FILES)
-	$(CC) $(CFLAGS) -o $(OUTPUT) $^ $(GLAD) $(LINK)
+# Check Source Tree
+check:
+	@echo "-- Checking project source tree..."
+	@test -d $(THIRDPARTY_DIR)/ || (echo " * ERROR: THIRDPARTY_DIR: $(THIRDPARTY_DIR)/ is missing" && exit 1)
+	@test -d $(USER_INCLUDE)/ 	|| (echo " * ERROR: USER_INCLUDE: $(USER_INCLUDE)/ is missing" && exit 1)
+	@test -d $(USER_SRC)/ 			|| (echo " * ERROR: USER_SRC: $(USER_SRC)/ is missing" && exit 1)
+	@test -d $(OUTPUT_DIR)/ 		|| (mkdir -p $(OUTPUT_DIR) && echo " * Generated missing OUTPUT_DIR: $(OUTPUT_DIR)")
+	@test -d $(BIN_DIR)/ 				|| (mkdir -p $(BIN_DIR) && echo " * Generated missing BIN_DIR: $(BIN_DIR)")
+	@echo "-- Project source tree is correct"
 
 clean:
-	$(RM) $(RMALL)
+	@$(MAKE) -C $(USER_SRC) clean --no-print-directory
+ifeq ($(CLEAN_THIRDPARTY),yes)
+	@$(MAKE) -C $(THIRDPARTY_DIR) clean --no-print-directory
+endif
 
-run: $(OUTPUT)
-	$(OUTPUT)
+run:
+	$(BIN_DIR)/$(OUTPUT_EXEC_NAME)
+
+thirdparty:
+	@echo "-- Building thirdparty dependencies..."
+	@$(MAKE) -C $(THIRDPARTY_DIR) --no-print-directory
+
+user:
+	@echo "-- Building user code"
+	@$(MAKE) -C $(USER_SRC) --no-print-directory
