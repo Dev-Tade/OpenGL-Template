@@ -37,7 +37,8 @@ const float triangle_data[DATA_FIELDS * 3] = {
   0.0f, 0.5f, 0.0f, 0.0f, 1.0f, 0.0f, 1.0f,
 };
 
-int main(int argc, char **argv) {
+int main(int argc, char **argv) 
+{
   Context ctx = {NULL, 0, 0, 0};
 
   if (!glfwInit()) {
@@ -45,8 +46,9 @@ int main(int argc, char **argv) {
     return -1;
   }
 
-  glfwWindowHint(GLFW_VERSION_MAJOR, 3);
-  glfwWindowHint(GLFW_VERSION_MINOR, 3);
+  glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+  glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+  glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
   ctx.window = glfwCreateWindow(WIDTH, HEIGHT, "OpenGL Template", NULL, NULL);
   if (!ctx.window) {
