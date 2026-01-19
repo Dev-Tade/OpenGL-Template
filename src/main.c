@@ -2,7 +2,9 @@
 #include <GLFW/glfw3.h>
 
 #include <stdio.h>
+#include <stdlib.h>
 
+#include <gl_debug.h>
 #include <shaders.h>
 
 #define WIDTH 800
@@ -17,9 +19,9 @@ typedef struct {
 
 // Forward Declarations
 
-void framebuffer_size_callback(GLFWwindow *window, int width, int height);
+static void glfw_error_cb(int error, const char *desc);
+static void glfw_framebuffer_size_cb(GLFWwindow *window, int width, int height);
 
-void debug_callback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar* msg, const GLvoid* user);
 void create_buffers(uint32_t *vao, uint32_t *vbo);
 void delete_buffers(uint32_t *vao, uint32_t *vbo);
 void bind_buffers(uint32_t *vao, uint32_t *vbo);
@@ -41,45 +43,38 @@ int main(int argc, char **argv)
 {
   Context ctx = {NULL, 0, 0, 0};
 
-  if (!glfwInit()) {
-    fprintf(stderr, "GLFW::INIT\n");
-    return -1;
-  }
+  glfwSetErrorCallback(glfw_error_cb);
+  if (!glfwInit()) exit(EXIT_FAILURE);
 
   glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
   glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
   glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
   ctx.window = glfwCreateWindow(WIDTH, HEIGHT, "OpenGL Template", NULL, NULL);
-  if (!ctx.window) {
-    fprintf(stderr, "GLFW::CREATE_WINDOW\n");
+  if (ctx.window == NULL) {
     glfwTerminate();
-    return -1;
+    exit(EXIT_FAILURE);
   }
 
   glfwMakeContextCurrent(ctx.window);
-
-  if (!gladLoadGLLoader((GLADloadproc) glfwGetProcAddress)){
-    fprintf(stderr, "GLAD::LOAD\n");
-    return -1;
-  }
-
+  
+  if (gladLoadGLLoader((GLADloadproc)glfwGetProcAddress) == 0)
+    exit(EXIT_FAILURE);
+  
+  printf("Loaded OpenGL: %d.%d\n", GLVersion.major, GLVersion.minor);
+  opengl_print_info();
+  opengl_debug_enable();
+  
   glViewport(0, 0, WIDTH, HEIGHT);
-  glfwSetWindowSizeCallback(ctx.window, framebuffer_size_callback);
-
-#ifdef ENABLE_GL_DEBUG
-  glEnable(GL_DEBUG_OUTPUT);
-  glDebugMessageCallback(debug_callback, (void*)0);
-#endif
-
+  glfwSetFramebufferSizeCallback(ctx.window, glfw_framebuffer_size_cb);
+  
   create_shader(&ctx.shader);
-
+  
   create_buffers(&ctx.vao, &ctx.vbo);
   glBufferData(GL_ARRAY_BUFFER, (sizeof(float) * DATA_FIELDS * 3), triangle_data, GL_STATIC_DRAW);
 
   vertex_attributes();
   unbind_buffers();
-
 
   while (!glfwWindowShouldClose(ctx.window)) {
     glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
@@ -105,11 +100,14 @@ int main(int argc, char **argv)
   return 0;
 }
 
-void debug_callback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar* msg, const GLvoid* user) {
-  fprintf(stderr, 
-    "GL CALLBACK: %s type = 0x%x, severity = 0x%x, message = %s\n",
-    (type == GL_DEBUG_TYPE_ERROR ? "** GL ERROR **" : ""), type, severity, msg
-  );
+static void glfw_error_cb(int error, const char *desc)
+{
+  fprintf(stderr, "[ERROR]: GLFW Error %d -> %s\n", error, desc);
+}
+
+void glfw_framebuffer_size_cb(GLFWwindow *window, int width, int height)
+{
+  glViewport(0, 0, width, height);
 }
 
 inline void create_buffers(uint32_t *vao, uint32_t *vbo) {
@@ -180,8 +178,4 @@ inline void create_shader(uint32_t *shader) {
 
   glDeleteShader(vert);
   glDeleteShader(frag);
-}
-
-void framebuffer_size_callback(GLFWwindow *window, int width, int height) {
-  glViewport(0, 0, width, height);
 }

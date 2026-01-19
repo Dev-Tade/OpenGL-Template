@@ -18,13 +18,18 @@ else ifeq ($(GLFW_MODE),dynamic)
 	LIBS += -DGLFW_DLL -lglfw3dll
 endif
 
+PREPROC_DEFINES :=
+
+ifeq ($(GL_DEBUG),enabled)
+	PREPROC_DEFINES += -DGL_DEBUG_ENABLED
+endif
 
 .PHONY: all clean
 
 all: $(BIN)
 
 $(OUTPUT_DIR)/%.o: %.c
-	$(CC) $(CFLAGS) -c $< -o $@ $(INCLUDES)
+	$(CC) $(CFLAGS) -c $< -o $@ $(INCLUDES) $(PREPROC_DEFINES)
 
 $(BIN): $(OBJ) $(THIRDPARTY_OBJ)
 	$(CC) $^ -o $@ $(LIBS) $(INCLUDES)
