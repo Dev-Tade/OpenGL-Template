@@ -1,6 +1,6 @@
 # OPENGL TEMPLATE
 
-An OpenGL 3.3 Core Profile project template using GLAD, GLFW 3.3.8, stb_image and raymath (raylib math module) under mingw64
+An OpenGL 4.6 Core Profile (backwards compatible) project template using GLAD, GLFW 3.3.8, stb_image and raymath (raylib math module) under mingw64
 
 [GLFW Download](https://www.glfw.org/download.html)
 
@@ -57,8 +57,16 @@ is the one used for generating the same configuration as provided in the repo.
 __NOTE: you must provide `--extensions ""` if you don't want any extensions, 
 if it's missing by default all available extensions would be enabled.__
 
-### OLDER BRANCHES
+### BRANCHES
 
-All effort has been moved into mantaining `master` branch,
-older branches are still avilable under `archive/` but don't
-receive new updates.
+- **master**
+  Actively mantained. Targets OpenGL 4.6 Core Profile.
+
+- **gl-3.3**
+  Stable OpenGL 3.3 Core Profile version.
+  May or may not receive new dependencies but not code
+  refactors/fixes.
+
+- **archive/xxx**
+  Are the oldest branches of the template, they
+  are still avilable but don't receive new updates.
