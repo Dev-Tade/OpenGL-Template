@@ -5,7 +5,7 @@
 static FILE *debug_output_file = NULL;
 
 #if defined(GL_DEBUG_ENABLED)
-#if defined(GL_KHR_debug) && GL_KHR_debug == 1
+#if defined(GL_VERSION_4_3) || (defined(GL_KHR_debug) && GL_KHR_debug == 1)
 
 static void opengl_debug_message_callback(
   GLenum source,
@@ -19,12 +19,33 @@ static void opengl_debug_message_callback(
 
 void opengl_debug_enable(void)
 {
+  if (debug_output_file == NULL) debug_output_file = stderr;
+
+  /*
+    Since 4.3 KHR_debug is part of core spec, do a runtime check of
+    the context being 4.3 or greater to enable it.
+    If version is below 4.3 then do runtime check for GL_KHR_extension
+    ensuring that driver supports it.
+  */
+#if defined(GL_VERSION_4_3)
+  // Wrapped in preproc guard to ensure runtime symbol is defined
+  if (GLAD_GL_VERSION_4_3 == 0) {
+    fprintf(debug_output_file,
+      "[WARNING]: OpenGL debug expected via OpenGL Core 4.3 spec but runtime version < 4.3\n"
+      "           Debug output will not be enabled.\n"
+    );
+    return;
+  }
+#elif defined(GL_KHR_debug)
+  // Wrapped in preproc guard to ensure runtime symbol is defined
   if (GLAD_GL_KHR_debug == 0) {
-    fprintf(stderr, "[WARNING]: GL_KHR_debug extension present, but not supported by driver\n");
+    fprintf(debug_output_file, 
+      "[WARNING]: GL_KHR_debug extension enabled, but not supported by driver\n"
+      "           Debug output will not be enabled\n"
+    );
    return;
   }
-
-  if (debug_output_file == NULL) debug_output_file = stderr;
+#endif // !GL_VERSION_4_3 !GL_KHR_debug
 
   glEnable(GL_DEBUG_OUTPUT);
   glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
@@ -90,6 +111,8 @@ static void opengl_debug_message_callback(
   GLsizei length, const GLchar* msg,
   const GLvoid* user)
 {
+  if (debug_output_file == NULL) debug_output_file = stderr;
+
   fprintf(debug_output_file,
     "[OpenGL Debug]:\n"
     "  - Source   : %s (0x%04X)\n"
@@ -105,15 +128,21 @@ static void opengl_debug_message_callback(
   );
 }
 
-#else   // GL_KHR_debug -- undefined
+#else   // GL_KHR_debug extension missing && GL_VERSION < 4.3
 
 void opengl_debug_enable(void)
 {
-  fprintf(stderr, "[WARNING]: GL_DEBUG_ENABLED defined, but GL_KHR_debug extension is missing\n");
+  if (debug_output_file == NULL) debug_output_file = stderr;
+  
+  fprintf(debug_output_file, 
+    "[WARNING]: GL_DEBUG_ENABLED defined, but GL_KHR_debug extension is missing.\n"
+    "           GL_KHR_debug extension is required if OpenGL version < 4.3\n"
+    "           Debug output will not be enabled.\n"
+  );
 } 
 
-#endif  //!GL_KHR_debug
-#else   //GL_DEBUG_ENABLED -- undefined
+#endif  //!GL_VERSION_4_3 !GL_KHR_debug
+#else   // Template debug output is disabled
 
 void opengl_debug_enable(void)
 {
@@ -129,19 +158,34 @@ void opengl_print_info(void)
   const GLubyte *renderer = glGetString(GL_RENDERER);
   const GLubyte *glsl_ver = glGetString(GL_SHADING_LANGUAGE_VERSION);
 
-  GLint profile_mask = 0;
+  const char *profile = "Legacy (pre-3.2)";
+
+  /*
+    GL_CONTEXT_PROFILE_MASK wasn't a thing until OpenGL 3.2
+    do not check for it if not defined 
+  */
+#if defined(GL_CONTEXT_PROFILE_MASK)
+  GLint profile_mask = 0;  
   glGetIntegerv(GL_CONTEXT_PROFILE_MASK, &profile_mask);
-  const char *profile = 
+  profile = 
     (profile_mask & GL_CONTEXT_CORE_PROFILE_BIT) ? "Core" :
     (profile_mask & GL_CONTEXT_COMPATIBILITY_PROFILE_BIT) ? "Compatibility" :
     "Unknown";
+#endif //!GL_CONTEXT_PROFILE_MASK
 
-  printf("[OpenGL Info]:\n");
-  printf("  - Version   : %s\n", version  ? (const char *)version  : "NULL");
-  printf("  - Vendor    : %s\n", vendor   ? (const char *)vendor   : "NULL");
-  printf("  - Renderer  : %s\n", renderer ? (const char *)renderer : "NULL");
-  printf("  - GLSL Ver. : %s\n", glsl_ver ? (const char *)glsl_ver : "NULL");
-  printf("  - Profile   : %s\n", profile);
+  printf(
+    "[OpenGL Info]:\n"
+    "  - Version   : %s\n"
+    "  - Vendor    : %s\n"
+    "  - Renderer  : %s\n"
+    "  - GLSL Ver. : %s\n"
+    "  - Profile   : %s\n",
+    version  ? (const char *)version  : "NULL",
+    vendor   ? (const char *)vendor   : "NULL",
+    renderer ? (const char *)renderer : "NULL",
+    glsl_ver ? (const char *)glsl_ver : "NULL",
+    profile
+  );
 }
 
 void opengl_debug_set_output(FILE *output_file)
